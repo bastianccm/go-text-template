@@ -257,7 +257,7 @@ func (s *state) walk(dot reflect.Value, node parse.Node) {
 // walkIfOrWith walks an 'if' or 'with' node. The two control structures
 // are identical in behavior except that 'with' sets dot.
 func (s *state) walkIfOrWith(typ parse.NodeType, dot reflect.Value, pipe *parse.PipeNode, list, elseList *parse.ListNode) {
-	defer s.pop(s.mark())
+	//defer s.pop(s.mark())
 	val := s.evalPipeline(dot, pipe)
 	truth, ok := isTrue(val)
 	if !ok {
