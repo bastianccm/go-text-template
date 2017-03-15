@@ -557,11 +557,17 @@ func (s *state) evalField(dot reflect.Value, fieldName string, node parse.Node, 
 	if method := ptr.MethodByName(fieldName); method.IsValid() {
 		return s.evalCall(dot, method, node, fieldName, args, final)
 	}
+	if method := ptr.MethodByName(strings.Title(fieldName)); method.IsValid() {
+		return s.evalCall(dot, method, node, fieldName, args, final)
+	}
 	hasArgs := len(args) > 1 || final.IsValid()
 	// It's not a method; must be a field of a struct or an element of a map.
 	switch receiver.Kind() {
 	case reflect.Struct:
 		tField, ok := receiver.Type().FieldByName(fieldName)
+		if !ok {
+			tField, ok = receiver.Type().FieldByName(strings.Title(fieldName))
+		}
 		if ok {
 			if isNil {
 				s.errorf("nil pointer evaluating %s.%s", typ, fieldName)
