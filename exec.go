@@ -594,6 +594,9 @@ func (s *state) evalField(dot reflect.Value, fieldName string, node parse.Node, 
 			}
 			result := receiver.MapIndex(nameVal)
 			if !result.IsValid() {
+                result = receiver.MapIndex(reflect.ValueOf(strings.Title(nameVal.String())))
+            }
+			if !result.IsValid() {
 				switch s.tmpl.option.missingKey {
 				case mapInvalid:
 					// Just use the invalid value.
