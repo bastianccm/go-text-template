@@ -560,6 +560,9 @@ func (s *state) evalField(dot reflect.Value, fieldName string, node parse.Node, 
 	if method := ptr.MethodByName(strings.Title(fieldName)); method.IsValid() {
 		return s.evalCall(dot, method, node, fieldName, args, final)
 	}
+    if ptr.Kind() == reflect.Slice && fieldName == "length" {
+		return reflect.ValueOf(ptr.Len())
+	}
 	hasArgs := len(args) > 1 || final.IsValid()
 	// It's not a method; must be a field of a struct or an element of a map.
 	switch receiver.Kind() {
