@@ -729,6 +729,8 @@ func (t *Tree) useVar(pos Pos, name string) Node {
 			return v
 		}
 	}
-	t.errorf("undefined variable %q", v.Ident[0])
-	return nil
+	t.vars = append(t.vars, name)
+	return v
+	//t.errorf("undefined variable %q", v.Ident[0])
+	//return nil
 }

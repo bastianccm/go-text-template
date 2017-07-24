@@ -13,6 +13,8 @@ import (
 	"sort"
 	"strings"
 	"text/template/parse"
+	"unicode"
+	"unicode/utf8"
 )
 
 // maxExecDepth specifies the maximum stack depth of templates within
@@ -178,6 +180,14 @@ func (t *Template) Execute(wr io.Writer, data interface{}) error {
 	return t.execute(wr, data)
 }
 
+func lowerFirst(s string) string {
+	if s == "" {
+		return ""
+	}
+	r, n := utf8.DecodeRuneInString(s)
+	return string(unicode.ToLower(r)) + s[n:]
+}
+
 func (t *Template) execute(wr io.Writer, data interface{}) (err error) {
 	defer errRecover(&err)
 	value, ok := data.(reflect.Value)
@@ -191,6 +201,24 @@ func (t *Template) execute(wr io.Writer, data interface{}) (err error) {
 	}
 	if t.Tree == nil || t.Root == nil {
 		state.errorf("%q is an incomplete or empty template", t.Name())
+	}
+	switch value.Kind() {
+	case reflect.Struct:
+		for i := 0; i < value.Type().NumField(); i++ {
+			state.vars = append(
+				state.vars,
+				variable{`$` + value.Type().Field(i).Name, value.Field(i)},
+				variable{`$` + lowerFirst(value.Type().Field(i).Name), value.Field(i)},
+			)
+		}
+	case reflect.Map:
+		for _, k := range value.MapKeys() {
+			state.vars = append(
+				state.vars,
+				variable{`$` + k.String(), value.MapIndex(k)},
+				variable{`$` + lowerFirst(k.String()), value.MapIndex(k)},
+			)
+		}
 	}
 	state.walk(value, t.Root)
 	return
@@ -560,7 +588,7 @@ func (s *state) evalField(dot reflect.Value, fieldName string, node parse.Node, 
 	if method := ptr.MethodByName(strings.Title(fieldName)); method.IsValid() {
 		return s.evalCall(dot, method, node, fieldName, args, final)
 	}
-    if ptr.Kind() == reflect.Slice && fieldName == "length" {
+	if ptr.Kind() == reflect.Slice && fieldName == "length" {
 		return reflect.ValueOf(ptr.Len())
 	}
 	hasArgs := len(args) > 1 || final.IsValid()
@@ -604,7 +632,7 @@ func (s *state) evalField(dot reflect.Value, fieldName string, node parse.Node, 
 				name := nameVal.String()
 				result = receiver.MapIndex(reflect.ValueOf(strings.Title(name)))
 			}
-            if !result.IsValid() {
+			if !result.IsValid() {
 				switch s.tmpl.option.missingKey {
 				case mapInvalid:
 					// Just use the invalid value.
